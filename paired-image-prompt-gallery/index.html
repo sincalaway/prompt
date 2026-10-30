@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>图像 × 提示词图鉴</title>
+  <style>
+    :root{--paper:#f5f1e8;--ink:#28251f;--muted:#79746b;--line:#ded7ca;--card:#fffdf8;--accent:#9a583e;--accent-soft:#efe1d7;--shadow:0 12px 32px rgba(44,34,25,.08)}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+    .wrap{max-width:1440px;margin:0 auto;padding:32px 24px 72px}
+    header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:12px 0 26px;border-bottom:1px solid var(--line)}
+    .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700}
+    h1{font-family:Georgia,"Noto Serif SC",serif;font-size:clamp(32px,5vw,58px);font-weight:500;letter-spacing:-.045em;line-height:1.05;margin:10px 0 12px}
+    .intro{max-width:640px;color:#615b52;font-size:15px;margin:0}
+    .stats{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;padding-top:8px}
+    .stat{min-width:122px;background:#eee8dc;border:1px solid var(--line);border-radius:16px;padding:13px 16px}
+    .stat strong{display:block;font:500 23px Georgia,serif}
+    .stat span{font-size:11px;color:var(--muted)}
+    .toolbar{position:sticky;top:0;z-index:5;margin:18px 0 20px;padding:14px;background:rgba(245,241,232,.94);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:18px;display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,260px) 170px auto;gap:10px;box-shadow:0 8px 22px rgba(44,34,25,.05)}
+    input,select,button{font:inherit}
+    input,select{height:44px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink);padding:0 13px;min-width:0}
+    input:focus,select:focus,button:focus-visible{outline:2px solid #bd876f;outline-offset:2px}
+    button{cursor:pointer}
+    .quiet{border:1px solid var(--line);background:transparent;color:var(--ink);padding:0 15px;border-radius:11px;font-weight:600}
+    .results{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:2px 2px 14px;color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0;transition:transform .18s ease,box-shadow .18s ease}
+    .card:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(44,34,25,.13)}
+    .thumb{width:100%;height:290px;display:block;object-fit:contain;background:#e9e3d8}
+    .body{padding:14px 15px 16px;display:flex;flex-direction:column;gap:8px;min-height:154px}
+    .kicker{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .tag{display:inline-flex;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--accent-soft);color:#794932;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:650}
+    .subtag{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .title{font-size:14px;font-weight:700;line-height:1.45;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:40px}
+    .excerpt{font-size:12px;color:#716b62;line-height:1.55;margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
+    .card-foot{display:flex;justify-content:flex-end;margin-top:auto}
+    .open{border:0;background:transparent;color:var(--accent);font-size:12px;font-weight:750;padding:4px 0}
+    .empty,.loading{padding:56px 20px;text-align:center;color:var(--muted);background:rgba(255,253,248,.6);border:1px dashed var(--line);border-radius:18px}
+    .more-row{text-align:center;padding:24px 0 0}
+    .more{height:46px;border:1px solid var(--line);background:var(--card);padding:0 24px;border-radius:12px;font-weight:650;color:var(--ink)}
+    footer{margin-top:44px;border-top:1px solid var(--line);padding-top:16px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:16px}
+    dialog{width:min(850px,calc(100vw - 28px));max-height:88vh;border:1px solid var(--line);padding:0;border-radius:20px;background:var(--card);color:var(--ink);box-shadow:0 24px 80px rgba(0,0,0,.28)}
+    dialog::backdrop{background:rgba(26,23,19,.58);backdrop-filter:blur(3px)}
+    .detail{display:grid;grid-template-columns:minmax(220px,.9fr) minmax(260px,1.1fr);max-height:88vh}
+    .detail-image{width:100%;height:100%;min-height:320px;max-height:88vh;object-fit:contain;background:#e9e3d8}
+    .detail-content{padding:24px;overflow:auto}
+    .detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+    .detail h2{font:500 25px Georgia,"Noto Serif SC",serif;margin:10px 0 14px;line-height:1.25}
+    .close{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:transparent;font-size:20px;line-height:1}
+    .prompt-block{border-top:1px solid var(--line);padding:14px 0}
+    .prompt-label{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--accent);font-size:12px;font-weight:750;margin-bottom:8px}
+    .copy{border:1px solid var(--line);background:#f7f2e9;border-radius:8px;padding:6px 10px;font-size:11px;color:var(--ink)}
+    .prompt-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.75;color:#403b34;margin:0}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#28251f;color:#fff;padding:10px 15px;border-radius:10px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+    .toast.show{opacity:1}
+    @media(max-width:1100px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.thumb{height:260px}}
+    @media(max-width:760px){.wrap{padding:20px 14px 48px}header{display:block}.stats{justify-content:flex-start;margin-top:20px}.toolbar{grid-template-columns:1fr 1fr;top:0;padding:10px}.toolbar input{grid-column:1/-1}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.thumb{height:210px}.body{padding:11px;min-height:160px}.title{font-size:13px}.excerpt{font-size:11px}.detail{grid-template-columns:1fr;overflow:auto}.detail-image{height:280px;min-height:0}.detail-content{padding:17px}.detail h2{font-size:22px}footer{display:block}footer span{display:block;margin-top:6px}}
+    @media(max-width:390px){.grid{grid-template-columns:1fr 1fr}.thumb{height:180px}.stat{min-width:105px;padding:11px}.stat strong{font-size:20px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <div class="eyebrow">IMAGE PROMPT ARCHIVE</div>
+        <h1>图像 × 提示词图鉴</h1>
+        <p class="intro">按图片、主题和原提示词探索灵感。这里只展示图片与同一条记录中明确对应的提示词；点击卡片可查看并复制原文。</p>
+      </div>
+      <div class="stats" aria-label="馆藏统计">
+        <div class="stat"><strong id="totalStat">—</strong><span>组明确配对</span></div>
+        <div class="stat"><strong id="categoryStat">—</strong><span>个分类</span></div>
+      </div>
+    </header>
+    <section class="toolbar" aria-label="搜索与筛选">
+      <input id="search" type="search" placeholder="搜索分类或原提示词…" autocomplete="off" aria-label="搜索">
+      <select id="category" aria-label="按分类筛选"><option value="">全部分类</option></select>
+      <select id="sort" aria-label="排序"><option value="default">默认排序</option><option value="title">按标题排序</option><option value="category">按分类排序</option></select>
+      <button id="clear" class="quiet" type="button">清除筛选</button>
+    </section>
+    <div class="results"><span id="resultCount">正在读取图鉴…</span><span id="pageNote"></span></div>
+    <section id="grid" class="grid" aria-live="polite"></section>
+    <div id="empty" class="empty" hidden>没有找到匹配项。试试更短的关键词或清除筛选。</div>
+    <div id="loading" class="loading">正在载入图片与提示词…</div>
+    <div class="more-row"><button id="more" class="more" type="button" hidden>继续浏览</button></div>
+    <footer><span>仅收录同条记录中可明确配对的图片与提示词。</span><span>搜索在本页本地完成；无需登录。</span></footer>
+  </main>
+  <dialog id="modal" aria-label="图片与提示词详情"><div class="detail"><img id="detailImage" class="detail-image" alt=""><section class="detail-content"><div class="detail-head"><div><div id="detailCategory" class="tag"></div><h2 id="detailTitle"></h2></div><button id="close" class="close" type="button" aria-label="关闭">×</button></div><div id="detailPrompts"></div></section></div></dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script>
+    const PAGE_SIZE = 60;
+    let records = [];
+    let filtered = [];
+    let visible = PAGE_SIZE;
+    const $ = (id) => document.getElementById(id);
+    const escapeHtml = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function displayTitle(item){const s=(item.prompts||[])[0]?.text||'';const line=s.split(/\r?\n/).map(x=>x.trim()).find(Boolean)||'';return line.length>60?line.slice(0,57)+'…':line}
+    const searchable = (item) => [displayTitle(item), item.category, item.subcategory, ...(item.categories||[]), ...(item.prompts||[]).map(p=>p.text), ...(item.negativePrompts||[]).map(p=>p.text)].join(' ').toLocaleLowerCase();
+    function applyFilters(reset=true){
+      if(reset) visible=PAGE_SIZE;
+      const q=$('search').value.trim().toLocaleLowerCase();
+      const category=$('category').value;
+      filtered=records.filter(item=>(!category || (item.categories||[item.category]).includes(category)) && (!q || searchable(item).includes(q)));
+      const sort=$('sort').value;
+      if(sort==='title') filtered.sort((a,b)=>displayTitle(a).localeCompare(displayTitle(b),'zh-CN'));
+      if(sort==='category') filtered.sort((a,b)=>(a.category||'').localeCompare(b.category||'','zh-CN') || displayTitle(a).localeCompare(displayTitle(b),'zh-CN'));
+      render();
+    }
+    function promptPreview(item){const p=(item.prompts||[])[0]?.text||'';return p.length>150?p.slice(0,150)+'…':p}
+    function render(){
+      const grid=$('grid'); grid.innerHTML='';
+      const shown=filtered.slice(0,visible);
+      const frag=document.createDocumentFragment();
+      for(const item of shown){
+        const card=document.createElement('article'); card.className='card';
+        const img=document.createElement('img'); img.className='thumb'; img.loading='lazy'; img.decoding='async'; img.src=item.image; img.alt=displayTitle(item)||'配对图片';
+        const body=document.createElement('div'); body.className='body';
+        const kicker=document.createElement('div'); kicker.className='kicker';
+        kicker.innerHTML=`<span class="tag" title="${escapeHtml(item.category)}">${escapeHtml(item.category||'未分类')}</span>${item.subcategory?`<span class="subtag" title="${escapeHtml(item.subcategory)}">${escapeHtml(item.subcategory)}</span>`:''}`;
+        const title=document.createElement('h2'); title.className='title'; title.textContent=displayTitle(item)||item.category||'原提示词';
+        const excerpt=document.createElement('p'); excerpt.className='excerpt'; excerpt.textContent=promptPreview(item);
+        const foot=document.createElement('div'); foot.className='card-foot'; const open=document.createElement('button'); open.className='open'; open.type='button'; open.textContent='查看原提示词 →'; open.addEventListener('click',()=>showDetail(item));
+        foot.append(open); body.append(kicker,title,excerpt,foot); card.append(img,body); frag.append(card);
+      }
+      grid.append(frag);
+      $('loading').hidden=true;
+      $('empty').hidden=filtered.length!==0;
+      $('resultCount').textContent=`显示 ${Math.min(visible,filtered.length).toLocaleString()} / ${filtered.length.toLocaleString()} 组配对`;
+      $('pageNote').textContent=filtered.length>PAGE_SIZE?'可继续向下浏览':'';
+      $('more').hidden=visible>=filtered.length;
+    }
+    function showDetail(item){
+      $('detailImage').src=item.image; $('detailImage').alt=displayTitle(item)||'配对图片'; $('detailTitle').textContent=displayTitle(item)||item.category||'原提示词'; $('detailCategory').textContent=item.category||'未分类';
+      const holder=$('detailPrompts'); holder.innerHTML='';
+      const fields=[...(item.prompts||[]),...(item.negativePrompts||[])];
+      for(const field of fields){
+        const block=document.createElement('div'); block.className='prompt-block';
+        const label=document.createElement('div'); label.className='prompt-label';
+        const name=document.createElement('span'); name.textContent=field.label||'原提示词';
+        const copy=document.createElement('button'); copy.className='copy'; copy.type='button'; copy.textContent='复制原文'; copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(field.text); toast('已复制提示词')}catch(e){toast('复制失败，请手动选择文本')}});
+        label.append(name,copy); const text=document.createElement('p'); text.className='prompt-text'; text.textContent=field.text; block.append(label,text); holder.append(block);
+      }
+      $('modal').showModal();
+    }
+    let toastTimer; function toast(msg){const node=$('toast');node.textContent=msg;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),1700)}
+    $('search').addEventListener('input',()=>applyFilters()); $('category').addEventListener('change',()=>applyFilters()); $('sort').addEventListener('change',()=>applyFilters());
+    $('clear').addEventListener('click',()=>{$('search').value='';$('category').value='';$('sort').value='default';applyFilters()});
+    $('more').addEventListener('click',()=>{visible+=PAGE_SIZE;render()});
+    $('close').addEventListener('click',()=>$('modal').close()); $('modal').addEventListener('click',e=>{if(e.target===$('modal'))$('modal').close()});
+    fetch('./gallery-data.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(data=>{
+      records=Array.isArray(data)?data:[];
+      const categories=[...new Set(records.flatMap(x=>x.categories||[x.category||'未分类']))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'zh-CN'));
+      for(const name of categories){const option=document.createElement('option');option.value=name;option.textContent=name;$('category').append(option)}
+      $('totalStat').textContent=records.length.toLocaleString(); $('categoryStat').textContent=categories.length.toLocaleString(); applyFilters();
+    }).catch(err=>{$('loading').textContent='图鉴数据暂时无法读取。请通过静态网站服务打开本页。';$('resultCount').textContent='载入失败';console.error(err)});
+  </script>
+</body>
+</html>
