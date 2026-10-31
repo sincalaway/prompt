@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#f7f1e6">
-  <title>图像 × 提示词图鉴</title>
+  <title>图像 × 提示词配对图库</title>
   <style>
     :root{--paper:#f7f1e6;--ink:#29251f;--muted:#746f67;--line:#e6ddcf;--card:#fffdf9;--accent:#b74f35;--accent-strong:#91371f;--shadow:0 14px 38px rgba(51,39,27,.09);--mint:#d6efe5;--lavender:#e8def7;--peach:#ffe2d0;--lemon:#fff0b8}
     *{box-sizing:border-box}
@@ -43,18 +43,18 @@
     <header>
       <div>
         <div class="eyebrow">IMAGE PROMPT ARCHIVE</div>
-        <h1>图像 × 提示词图鉴</h1>
-        <p class="intro">按图片、主题和来源记录探索灵感。先载入轻量预览；点击图片查看大图与高清来源，点击卡片下方查看并复制提示词。</p>
+        <h1>图像 × 提示词配对图库</h1>
+        <p class="intro">按主题浏览一一配对的图片与提示词。先载入轻量预览；点击图片查看大图与高清来源，点击卡片下方查看并复制提示词。</p>
       </div>
       <div class="stats" aria-label="馆藏统计">
-        <div class="stat"><strong id="totalStat">—</strong><span>组图文记录</span></div>
-        <div class="stat"><strong id="categoryStat">—</strong><span>个分类</span></div>
+        <div class="stat"><strong id="totalStat">—</strong><span>组配对图文</span></div>
+        <div class="stat"><strong id="categoryStat">—</strong><span>个主题</span></div>
       </div>
     </header>
     <section class="toolbar" aria-label="搜索与筛选">
-      <input id="search" type="search" placeholder="搜索分类或原提示词…" autocomplete="off" aria-label="搜索">
-      <select id="category" aria-label="按分类筛选"><option value="">全部分类</option></select>
-      <select id="sort" aria-label="排序"><option value="default">默认排序</option><option value="title">按标题排序</option><option value="category">按分类排序</option></select>
+      <input id="search" type="search" placeholder="搜索主题或原提示词…" autocomplete="off" aria-label="搜索">
+      <select id="category" aria-label="按主题筛选"><option value="">全部主题</option></select>
+      <select id="sort" aria-label="排序"><option value="default">默认排序</option><option value="title">按标题排序</option><option value="category">按主题排序</option></select>
       <button id="clear" class="quiet" type="button">清除筛选</button>
     </section>
     <div class="results" aria-live="polite"><span id="resultCount">正在读取图鉴…</span><span id="pageNote"></span></div>
@@ -62,7 +62,7 @@
     <div id="empty" class="empty" hidden>没有找到匹配项。试试更短的关键词或清除筛选。</div>
     <div id="loading" class="loading" hidden></div>
     <div class="more-row"><button id="more" class="more" type="button" hidden>继续浏览</button></div>
-    <footer><span>提示词按源记录保留；同帖多图可能共用模板。高清原图仅在打开大图时请求。</span><span>搜索会按需检索匹配分类或完整图鉴；无需登录。</span></footer>
+    <footer><span>提示词按源记录保留；同帖多图可能共用模板。高清原图仅在打开大图时请求。</span><span>搜索会按需检索匹配主题或完整图鉴；无需登录。</span></footer>
   </main>
   <dialog id="modal" aria-label="图片与提示词详情"><div class="detail"><div class="detail-image-pane"><button id="detailImageButton" class="detail-image-button" type="button" aria-label="放大查看图片"><img id="detailImage" class="detail-image" alt=""></button><div class="image-tools"><span id="detailImageStatus"></span><button id="detailZoom" class="copy" type="button">放大看图</button></div></div><section class="detail-content"><div class="detail-head"><div><div id="detailCategory" class="tag"></div><h2 id="detailTitle"></h2></div><button id="close" class="close" type="button" aria-label="关闭">×</button></div><div id="detailPrompts"></div></section></div></dialog>
   <dialog id="imageModal" class="viewer" aria-label="放大图片"><div class="viewer-bar"><div class="viewer-info"><strong id="viewerTitle">图片查看</strong><span id="viewerStatus"></span></div><div class="viewer-actions"><a id="originalLink" target="_blank" rel="noopener noreferrer">打开图片文件 ↗</a><button id="closeViewer" class="close" type="button" aria-label="关闭图片">×</button></div></div><div class="viewer-body"><img id="viewerImage" class="viewer-image" alt=""></div></dialog>
