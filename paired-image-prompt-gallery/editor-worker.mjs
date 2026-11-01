@@ -127,11 +127,13 @@ async function handleEdit(request, env) {
     throw new RequestError(400, '记录定位信息无效。');
   }
   const changes = payload.changes || {};
+  const hasTitle = Object.prototype.hasOwnProperty.call(changes, 'title');
   const hasCategory = Object.prototype.hasOwnProperty.call(changes, 'category');
+  const hasAddCategory = Object.prototype.hasOwnProperty.call(changes, 'addCategory');
   const hasPrompts = Object.prototype.hasOwnProperty.call(changes, 'prompts');
   const hasNegativePrompts = Object.prototype.hasOwnProperty.call(changes, 'negativePrompts');
   const imageAction = changes.imageAction || 'none';
-  if (!hasCategory && !hasPrompts && !hasNegativePrompts && imageAction === 'none') {
+  if (!hasTitle && !hasCategory && !hasAddCategory && !hasPrompts && !hasNegativePrompts && imageAction === 'none') {
     throw new RequestError(400, '没有检测到需要提交的修改。');
   }
   if (!['none', 'delete', 'replace'].includes(imageAction)) throw new RequestError(400, '图片操作无效。');
@@ -154,11 +156,23 @@ async function handleEdit(request, env) {
 
   const record = JSON.parse(JSON.stringify(current));
   const oldCategories = categoriesOf(current);
+  if (hasTitle) {
+    const title = String(changes.title || '').trim();
+    if (!title || title.length > 160) throw new RequestError(400, '标题必须填写，且不能超过 160 个字符。');
+    record.title = title;
+  }
   if (hasCategory) {
     const category = String(changes.category || '').trim();
     if (!category || category.length > 100) throw new RequestError(400, '主题必须填写，且不能超过 100 个字符。');
     record.category = category;
     record.categories = [category];
+  }
+  if (hasAddCategory) {
+    const category = String(changes.addCategory || '').trim();
+    if (!category || category.length > 100) throw new RequestError(400, '新增主题必须填写，且不能超过 100 个字符。');
+    const existing = categoriesOf(record);
+    if (existing.includes(category)) throw new RequestError(400, '这条记录已经包含该主题。');
+    record.categories = [...existing, category];
   }
   for (const key of ['prompts', 'negativePrompts']) {
     const present = key === 'prompts' ? hasPrompts : hasNegativePrompts;
@@ -204,7 +218,7 @@ async function handleEdit(request, env) {
   }
   records[localIndex] = record;
 
-  if (hasCategory) {
+  if (hasCategory || hasAddCategory) {
     const newCategories = categoriesOf(record);
     manifest.categoryCounts ||= {};
     manifest.categoryShards ||= {};
@@ -230,7 +244,7 @@ async function handleEdit(request, env) {
   const tree = [
     { path: shardPath, mode: '100644', type: 'blob', content: `${JSON.stringify(records, null, 2)}\n` },
   ];
-  if (hasCategory) tree.push({ path: manifestPath, mode: '100644', type: 'blob', content: `${JSON.stringify(manifest, null, 2)}\n` });
+  if (hasCategory || hasAddCategory) tree.push({ path: manifestPath, mode: '100644', type: 'blob', content: `${JSON.stringify(manifest, null, 2)}\n` });
   if (imageBlobSha && imagePath) tree.push({ path: `${GALLERY}/${imagePath}`, mode: '100644', type: 'blob', sha: imageBlobSha });
 
   const ref = await github(`/git/ref/heads/${encodeURIComponent(BRANCH)}`, env);
@@ -238,7 +252,7 @@ async function handleEdit(request, env) {
   if (!parentSha) throw new RequestError(502, '无法读取图库分支，未提交更改。');
   const parent = await github(`/git/commits/${parentSha}`, env);
   const newTree = await github('/git/trees', env, 'POST', { base_tree: parent.tree.sha, tree });
-  const changed = [hasCategory ? 'theme' : '', hasPrompts || hasNegativePrompts ? 'prompt' : '', imageAction !== 'none' ? 'image' : ''].filter(Boolean).join(', ');
+  const changed = [hasTitle ? 'title' : '', hasCategory ? 'theme' : '', hasAddCategory ? 'additional theme' : '', hasPrompts || hasNegativePrompts ? 'prompt' : '', imageAction !== 'none' ? 'image' : ''].filter(Boolean).join(', ');
   const commit = await github('/git/commits', env, 'POST', {
     message: `Gallery edit: ${changed} for record ${index}`,
     tree: newTree.sha,

@@ -5,7 +5,9 @@
   const STORAGE_KEY = 'paired-gallery-editor-key';
   const originalRender = window.render;
   const originalShowDetail = window.showDetail;
+  const SUBMIT_TIMEOUT_MS = 60000;
   let state = null;
+  let submitting = false;
 
   if (typeof originalRender !== 'function' || typeof originalShowDetail !== 'function') return;
 
@@ -17,6 +19,18 @@
     button.addEventListener('click', onClick);
     return button;
   };
+
+  function cleanupEditorControls() {
+    document.querySelectorAll('.editor-category-action, .editor-category-input, .editor-add-category-action, .editor-add-category-input, .editor-category-tags, .editor-title-action, .editor-title-input, .editor-panel, .editor-prompt-action').forEach(node => node.remove());
+    document.querySelectorAll('.image-tools [data-editor-control]').forEach(node => node.remove());
+  }
+
+  function setSubmitBusy(busy) {
+    document.querySelectorAll('#modal .editor-modal-submit').forEach(button => {
+      button.disabled = busy;
+      button.textContent = busy ? '正在安全提交…' : '提交 GitHub 并更新公开图库';
+    });
+  }
 
   function recordIndex(item) {
     if (!manifest || !shardCache) return -1;
@@ -104,10 +118,26 @@
   }
 
   function mountEditor(item) {
+    cleanupEditorControls();
     const current = newState(item);
     const modal = document.getElementById('modal');
     const detailCategory = document.getElementById('detailCategory');
-    const themeButton = makeButton('编辑主题', 'editor-action', () => {
+    const titleNode = document.getElementById('detailTitle');
+    const titleButton = makeButton('编辑概述', 'editor-action editor-title-action', () => {
+      const input = document.querySelector('.editor-title-input');
+      input.hidden = !input.hidden;
+      if (!input.hidden) { input.focus(); input.select(); }
+    });
+    const titleInput = document.createElement('input');
+    titleInput.className = 'editor-title-input';
+    titleInput.type = 'text';
+    titleInput.maxLength = 160;
+    titleInput.value = titleNode.textContent || '';
+    titleInput.placeholder = '输入概述';
+    titleInput.hidden = true;
+    titleNode.after(titleButton, titleInput);
+
+    const themeButton = makeButton('编辑主题', 'editor-action editor-category-action', () => {
       const input = document.querySelector('.editor-category-input');
       input.hidden = !input.hidden;
       if (!input.hidden) input.focus();
@@ -119,7 +149,28 @@
     categoryInput.value = item.category || '';
     categoryInput.placeholder = '输入主题';
     categoryInput.hidden = true;
-    detailCategory.after(themeButton, categoryInput);
+    const addCategoryButton = makeButton('添加主题', 'editor-action editor-add-category-action', () => {
+      const input = document.querySelector('.editor-add-category-input');
+      input.hidden = !input.hidden;
+      if (!input.hidden) input.focus();
+    });
+    const addCategoryInput = document.createElement('input');
+    addCategoryInput.className = 'editor-add-category-input';
+    addCategoryInput.type = 'text';
+    addCategoryInput.maxLength = 100;
+    addCategoryInput.placeholder = '输入要添加的主题';
+    addCategoryInput.hidden = true;
+    const categoryTags = document.createElement('span');
+    categoryTags.className = 'editor-category-tags';
+    const extraCategories = (Array.isArray(item.categories) ? item.categories : [item.category]).filter(category => category && category !== item.category);
+    categoryTags.hidden = extraCategories.length === 0;
+    for (const category of extraCategories) {
+      const tag = document.createElement('span');
+      tag.className = 'editor-category-chip';
+      tag.textContent = category;
+      categoryTags.append(tag);
+    }
+    detailCategory.after(themeButton, addCategoryButton, categoryTags, categoryInput, addCategoryInput);
 
     const imagePane = document.getElementById('detailImagePane');
     const imageButton = document.getElementById('detailImageButton');
@@ -247,6 +298,8 @@
 
     const submit = makeButton('提交 GitHub 并更新公开图库', 'editor-submit editor-modal-submit', submitEdit);
     submit.dataset.editorControl = '1';
+    submit.disabled = submitting;
+    if (submitting) submit.textContent = '正在安全提交…';
     const note = document.createElement('p');
     note.className = 'editor-note';
     note.dataset.editorControl = '1';
@@ -258,13 +311,20 @@
     panel.dataset.editorControl = '1';
     panel.append(note, submit);
     document.querySelector('.detail-content').append(panel);
+    if (submitting) setSubmitBusy(true);
   }
 
   function collectChanges() {
     const changes = {};
+    const titleInput = document.querySelector('.editor-title-input');
+    const title = titleInput?.value.trim() || '';
+    const originalTitle = String(state.expected.title || window.displayTitle?.(state.expected) || state.expected.category || '').trim();
+    if (title !== originalTitle) changes.title = title;
     const categoryInput = document.querySelector('.editor-category-input');
     const category = categoryInput?.value.trim();
     if (category && category !== String(state.expected.category || '').trim()) changes.category = category;
+    const addCategory = document.querySelector('.editor-add-category-input')?.value.trim();
+    if (addCategory) changes.addCategory = addCategory;
     const prompts = [...(state.item.prompts || [])].map(field => ({ label: field.label || '提示词(Prompt)', text: field.text || '' }));
     const negativePrompts = [...(state.item.negativePrompts || [])].map(field => ({ label: field.label || '负面提示词', text: field.text || '' }));
     let promptsChanged = false;
@@ -289,12 +349,14 @@
 
   async function submitEdit(event) {
     const button = event.currentTarget;
+    if (submitting || !button.isConnected) return;
+    const submittedState = state;
     if (!state || state.index < 0) {
       window.alert('无法安全定位这条记录，请刷新图库后重试。');
       return;
     }
     const changes = collectChanges();
-    const hasChange = Object.keys(changes).some(key => key === 'category' || key === 'prompts' || key === 'negativePrompts' || (key === 'imageAction' && changes.imageAction !== 'none'));
+    const hasChange = Object.keys(changes).some(key => key === 'title' || key === 'category' || key === 'addCategory' || key === 'prompts' || key === 'negativePrompts' || (key === 'imageAction' && changes.imageAction !== 'none'));
     if (!hasChange) {
       window.alert('尚未修改主题、提示词或图片。');
       return;
@@ -307,10 +369,24 @@
       window.alert('主题不能为空。');
       return;
     }
+    if (changes.title !== undefined && !changes.title) {
+      window.alert('标题不能为空。');
+      return;
+    }
+    if (changes.addCategory && changes.addCategory.length > 100) {
+      window.alert('新增主题不能超过 100 个字符。');
+      return;
+    }
+    if (changes.addCategory && (state.item.categories || [state.item.category]).includes(changes.addCategory)) {
+      window.alert('这条记录已经包含该主题。');
+      return;
+    }
     const title = window.displayTitle?.(state.item) || state.item.category || '未命名记录';
     const summary = [
       `记录 #${state.index + 1}：${title}`,
+      changes.title ? `新概述：${changes.title}` : '',
       changes.category ? `新主题：${changes.category}` : '',
+      changes.addCategory ? `添加主题：${changes.addCategory}` : '',
       changes.prompts ? '更新正向提示词' : '',
       changes.negativePrompts ? '更新负面提示词' : '',
       changes.imageAction === 'replace' ? '替换图片（已预览）' : '',
@@ -326,13 +402,17 @@
       if (!key) return;
       sessionStorage.setItem(STORAGE_KEY, key);
     }
-    button.disabled = true;
-    button.textContent = '正在安全提交…';
+    if (submitting || state !== submittedState) return;
+    submitting = true;
+    setSubmitBusy(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
     try {
       const response = await fetch(`${EDITOR_API}/api/edit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ recordIndex: state.index, expected: state.expected, changes }),
+        body: JSON.stringify({ recordIndex: submittedState.index, expected: submittedState.expected, changes }),
+        signal: controller.signal,
       });
       const result = await response.json().catch(() => ({}));
       if (response.status === 401) {
@@ -342,29 +422,40 @@
       if (!response.ok) throw new Error(result.error || `提交失败（HTTP ${response.status}）。`);
 
       if (changes.category !== undefined) {
-        state.item.category = changes.category;
-        state.item.categories = [changes.category];
+        submittedState.item.category = changes.category;
+        submittedState.item.categories = [changes.category];
       }
-      if (changes.prompts) state.item.prompts = changes.prompts;
-      if (changes.negativePrompts) state.item.negativePrompts = changes.negativePrompts;
+      if (changes.addCategory) {
+        const categories = new Set(submittedState.item.categories || [submittedState.item.category].filter(Boolean));
+        categories.add(changes.addCategory);
+        submittedState.item.categories = [...categories];
+      }
+      if (changes.title !== undefined) submittedState.item.title = changes.title;
+      if (changes.prompts) submittedState.item.prompts = changes.prompts;
+      if (changes.negativePrompts) submittedState.item.negativePrompts = changes.negativePrompts;
       if (changes.imageAction === 'delete') {
-        delete state.item.image;
-        delete state.item.originalImage;
-        delete state.item.imageWidth;
-        delete state.item.imageHeight;
+        delete submittedState.item.image;
+        delete submittedState.item.originalImage;
+        delete submittedState.item.imageWidth;
+        delete submittedState.item.imageHeight;
       } else if (changes.imageAction === 'replace') {
-        state.item.image = result.imagePath;
-        delete state.item.originalImage;
-        state.item.imageWidth = changes.image.width;
-        state.item.imageHeight = changes.image.height;
+        submittedState.item.image = result.imagePath;
+        delete submittedState.item.originalImage;
+        submittedState.item.imageWidth = changes.image.width;
+        submittedState.item.imageHeight = changes.image.height;
       }
       if (typeof window.render === 'function') window.render();
-      window.showDetail(state.item);
+      if (state === submittedState) window.showDetail(submittedState.item);
       window.toast?.('GitHub 已提交，公开图库正在更新');
     } catch (error) {
-      window.alert(error.message || '提交失败，请检查网络后重试。');
-      button.disabled = false;
-      button.textContent = '提交 GitHub 并更新公开图库';
+      const message = error.name === 'AbortError'
+        ? '提交超过 60 秒仍未返回，结果暂时无法确认。请先刷新图库检查修改是否已生效，再决定是否重试，避免重复提交。'
+        : (error.message || '提交失败，请检查网络后重试。');
+      window.alert(message);
+    } finally {
+      clearTimeout(timeoutId);
+      submitting = false;
+      setSubmitBusy(false);
     }
   }
 
