@@ -34,8 +34,12 @@
     dialog.viewer{width:min(1400px,calc(100vw - 16px));max-height:95vh;border:0;border-radius:12px;background:#191715;color:#fff}.viewer-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 14px;border-bottom:1px solid #45403a}.viewer-info{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:12px}.viewer-info strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.viewer-info span{font-size:11px;color:#d0c7ba}.viewer-actions{display:flex;align-items:center;gap:12px;flex:none}.viewer-actions a{font-size:12px;color:#f0c5a8;text-decoration:none}.viewer-actions .close{color:#fff;border-color:#6b6256}.viewer-body{display:flex;justify-content:center;align-items:center;min-height:200px;padding:10px;overflow:auto}.viewer-image{display:block;width:auto;height:auto;max-width:100%;max-height:calc(95vh - 90px);object-fit:contain}
     @media(max-width:1100px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.thumb,.skeleton-image{height:260px}}
     @media(max-width:760px){.wrap{padding:18px 14px 48px}header{display:block;padding:16px;border-radius:20px}.stats{justify-content:flex-start;margin-top:20px}.toolbar{grid-template-columns:1fr 1fr;top:0;padding:10px}.toolbar input{grid-column:1/-1}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.thumb,.skeleton-image{height:210px}.body{padding:11px;min-height:160px}.title{font-size:13px}.excerpt{font-size:11px}.detail{grid-template-columns:1fr;overflow:auto}.detail-image-button{min-height:0;height:280px}.detail-image{max-height:280px}.detail-content{padding:17px}.detail h2{font-size:22px}.viewer-bar{gap:8px}.viewer-actions{gap:8px}.viewer-actions a{max-width:76px;font-size:11px}footer{display:block}footer span{display:block;margin-top:6px}}
-    @media(max-width:390px){.grid{grid-template-columns:1fr 1fr}.thumb,.skeleton-image{height:180px}.stat{min-width:105px;padding:11px}.stat strong{font-size:20px}}
-    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+@media(max-width:390px){.grid{grid-template-columns:1fr 1fr}.thumb,.skeleton-image{height:180px}.stat{min-width:105px;padding:11px}.stat strong{font-size:20px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+    .no-image-thumb{width:100%;height:290px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(ellipse at 20% 15%,rgba(255,230,201,.9),transparent 48%),linear-gradient(145deg,#eee7df,#e9e9f0);color:#5f554d;text-align:center}
+    .no-image-thumb span{font:600 18px Georgia,"Noto Serif SC",serif;letter-spacing:.04em}.no-image-thumb small{font-size:12px;color:#746f67}
+    dialog.no-image .detail{grid-template-columns:minmax(0,1fr)}.detail-image-pane[hidden]{display:none}.prompt-only-note{margin:0 0 12px;padding:9px 11px;border:1px solid #ead4c7;border-radius:10px;background:#fff6ef;color:#85442f;font-size:12px;font-weight:700}
+@media(max-width:1100px){.no-image-thumb{height:260px}}@media(max-width:760px){.no-image-thumb{height:210px}}@media(max-width:390px){.no-image-thumb{height:180px}}
   </style>
 </head>
 <body>
@@ -44,10 +48,10 @@
       <div>
         <div class="eyebrow">IMAGE PROMPT ARCHIVE</div>
         <h1>图像 × 提示词配对图库</h1>
-        <p class="intro">按主题浏览一一配对的图片与提示词。先载入轻量预览；点击图片查看大图与高清来源，点击卡片下方查看并复制提示词。</p>
+        <p class="intro">按主题浏览图片 × 提示词配对，以及 NSFW 分类中的无图提示词。先载入轻量预览；点击图片查看大图与高清来源，点击卡片查看并复制原文。</p>
       </div>
       <div class="stats" aria-label="馆藏统计">
-        <div class="stat"><strong id="totalStat">—</strong><span>组配对图文</span></div>
+        <div class="stat"><strong id="totalStat">—</strong><span>条目</span></div>
         <div class="stat"><strong id="categoryStat">—</strong><span>个主题</span></div>
       </div>
     </header>
@@ -62,9 +66,9 @@
     <div id="empty" class="empty" hidden>没有找到匹配项。试试更短的关键词或清除筛选。</div>
     <div id="loading" class="loading" hidden></div>
     <div class="more-row"><button id="more" class="more" type="button" hidden>继续浏览</button></div>
-    <footer><span>提示词按源记录保留；同帖多图可能共用模板。高清原图仅在打开大图时请求。</span><span>搜索会按需检索匹配主题或完整图鉴；无需登录。</span></footer>
+    <footer><span>提示词按源记录保留；NSFW 分类中的部分记录仅有提示词，未附成图。高清原图仅在打开大图时请求。</span><span>搜索会按需检索匹配主题或完整图鉴；无需登录。</span></footer>
   </main>
-  <dialog id="modal" aria-label="图片与提示词详情"><div class="detail"><div class="detail-image-pane"><button id="detailImageButton" class="detail-image-button" type="button" aria-label="放大查看图片"><img id="detailImage" class="detail-image" alt=""></button><div class="image-tools"><span id="detailImageStatus"></span><button id="detailZoom" class="copy" type="button">放大看图</button></div></div><section class="detail-content"><div class="detail-head"><div><div id="detailCategory" class="tag"></div><h2 id="detailTitle"></h2></div><button id="close" class="close" type="button" aria-label="关闭">×</button></div><div id="detailPrompts"></div></section></div></dialog>
+  <dialog id="modal" aria-label="图片与提示词详情"><div class="detail"><div id="detailImagePane" class="detail-image-pane"><button id="detailImageButton" class="detail-image-button" type="button" aria-label="放大查看图片"><img id="detailImage" class="detail-image" alt=""></button><div class="image-tools"><span id="detailImageStatus"></span><button id="detailZoom" class="copy" type="button">放大看图</button></div></div><section class="detail-content"><div class="detail-head"><div><div id="detailCategory" class="tag"></div><h2 id="detailTitle"></h2></div><button id="close" class="close" type="button" aria-label="关闭">×</button></div><p id="detailImageNotice" class="prompt-only-note" hidden>仅提示词 · 本条未附成图</p><div id="detailPrompts"></div></section></div></dialog>
   <dialog id="imageModal" class="viewer" aria-label="放大图片"><div class="viewer-bar"><div class="viewer-info"><strong id="viewerTitle">图片查看</strong><span id="viewerStatus"></span></div><div class="viewer-actions"><a id="originalLink" target="_blank" rel="noopener noreferrer">打开图片文件 ↗</a><button id="closeViewer" class="close" type="button" aria-label="关闭图片">×</button></div></div><div class="viewer-body"><img id="viewerImage" class="viewer-image" alt=""></div></dialog>
   <div id="toast" class="toast" role="status"></div>
   <script>
@@ -82,7 +86,7 @@
     const $ = (id) => document.getElementById(id);
     const escapeHtml = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const preferredImage = (item) => item.originalImage || item.image;
-    function displayTitle(item){const s=(item.prompts||[])[0]?.text||'';const line=s.split(/\r?\n/).map(x=>x.trim()).find(x=>x&&!/^(?:完整)?(?:提示词|prompts?)\s*[:：]?$/i.test(x))||'';return line.length>60?line.slice(0,57)+'…':line}
+    function displayTitle(item){if(item.title)return item.title;const s=(item.prompts||[])[0]?.text||'';const line=s.split(/\r?\n/).map(x=>x.trim()).find(x=>x&&!/^(?:完整)?(?:提示词|prompts?)\s*[:：]?$/i.test(x))||'';return line.length>60?line.slice(0,57)+'…':line}
     function categoryHue(value=''){let h=0;for(const ch of value)h=(h*31+ch.codePointAt(0))%360;return h}
     function paintCategory(node,category){node.style.setProperty('--chip-hue',categoryHue(category));node.textContent=category||'未分类';node.title=category||'未分类'}
     function showSkeletons(count=12){const grid=$('grid');grid.innerHTML='';const frag=document.createDocumentFragment();for(let i=0;i<count;i++){const card=document.createElement('div');card.className='skeleton';card.setAttribute('aria-hidden','true');card.innerHTML='<div class="skeleton-image"></div><div class="skeleton-body"><div class="skeleton-line short"></div><div class="skeleton-line medium"></div><div class="skeleton-line"></div></div>';frag.append(card)}grid.append(frag);grid.setAttribute('aria-busy','true')}
@@ -127,18 +131,23 @@
       const lazyImages=[];
       for(const item of shown){
         const card=document.createElement('article');card.className='card';
-        const imageButton=document.createElement('button');imageButton.type='button';imageButton.className='thumb-button';imageButton.setAttribute('aria-label',item.originalImage?'查看高清图片':'查看图片');imageButton.addEventListener('click',()=>showImage(item));
-        const img=document.createElement('img');img.className='thumb';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.alt=displayTitle(item)||'图片';img.dataset.src=item.image;img.onload=()=>img.classList.add('is-loaded');
-        const badge=document.createElement('span');badge.className='quality-badge '+(item.originalImage?'quality-original':Math.max(item.imageWidth||0,item.imageHeight||0)>=600?'quality-large':'quality-preview');badge.textContent=item.originalImage?'含高清原图':Math.max(item.imageWidth||0,item.imageHeight||0)>=600?'较大预览':'源表预览';
-        let failed=false;img.onerror=()=>{if(item.originalImage&&!failed){failed=true;img.dataset.src=item.image;img.classList.add('is-error');img.src=item.image;badge.className='quality-badge quality-preview';badge.textContent='源表预览'}else{img.classList.add('is-error');badge.className='quality-badge quality-preview';badge.textContent='载入失败'}};
-        imageButton.append(img,badge);if(imageObserver)lazyImages.push(img);else{img.src=img.dataset.src;delete img.dataset.src}
+        if(item.image){
+          const imageButton=document.createElement('button');imageButton.type='button';imageButton.className='thumb-button';imageButton.setAttribute('aria-label',item.originalImage?'查看高清图片':'查看图片');imageButton.addEventListener('click',()=>showImage(item));
+          const img=document.createElement('img');img.className='thumb';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.alt=displayTitle(item)||'图片';img.dataset.src=item.image;img.onload=()=>img.classList.add('is-loaded');
+          const badge=document.createElement('span');badge.className='quality-badge '+(item.originalImage?'quality-original':Math.max(item.imageWidth||0,item.imageHeight||0)>=600?'quality-large':'quality-preview');badge.textContent=item.originalImage?'含高清原图':Math.max(item.imageWidth||0,item.imageHeight||0)>=600?'较大预览':'源表预览';
+          let failed=false;img.onerror=()=>{if(item.originalImage&&!failed){failed=true;img.dataset.src=item.image;img.classList.add('is-error');img.src=item.image;badge.className='quality-badge quality-preview';badge.textContent='源表预览'}else{img.classList.add('is-error');badge.className='quality-badge quality-preview';badge.textContent='载入失败'}};
+          imageButton.append(img,badge);if(imageObserver)lazyImages.push(img);else{img.src=img.dataset.src;delete img.dataset.src}card.append(imageButton);
+        }else{
+          const placeholder=document.createElement('div');placeholder.className='no-image-thumb';placeholder.setAttribute('aria-label','仅提示词，本条未附图片');
+          const label=document.createElement('span');label.textContent='仅提示词';const note=document.createElement('small');note.textContent='本条未附图片';placeholder.append(label,note);card.append(placeholder);
+        }
         const body=document.createElement('div');body.className='body';const kicker=document.createElement('div');kicker.className='kicker';const tag=document.createElement('span');tag.className='tag';paintCategory(tag,item.category);const pieces=[tag];if(item.subcategory){const subtag=document.createElement('span');subtag.className='subtag';subtag.textContent=item.subcategory;subtag.title=item.subcategory;pieces.push(subtag)}kicker.append(...pieces);
         const title=document.createElement('h2');title.className='title';title.textContent=displayTitle(item)||item.category||'原提示词';const excerpt=document.createElement('p');excerpt.className='excerpt';const prompt=(item.prompts||[])[0]?.text||'';excerpt.textContent=prompt.length>150?prompt.slice(0,150)+'…':prompt;
-        const foot=document.createElement('div');foot.className='card-foot';const open=document.createElement('button');open.className='open';open.type='button';open.textContent='查看原提示词 →';open.addEventListener('click',()=>showDetail(item));foot.append(open);body.append(kicker,title,excerpt,foot);card.append(imageButton,body);frag.append(card);
+        const foot=document.createElement('div');foot.className='card-foot';const open=document.createElement('button');open.className='open';open.type='button';open.textContent='查看原提示词 →';open.addEventListener('click',()=>showDetail(item));foot.append(open);body.append(kicker,title,excerpt,foot);card.append(body);frag.append(card);
       }
       grid.append(frag);if(imageObserver)for(const img of lazyImages)imageObserver.observe(img);$('empty').hidden=filtered.length!==0;const shownCount=Math.min(visible,filtered.length);const progressive=isProgressiveBrowse();
       if(progressive){const loaded=manifest.shards.slice(0,browseShardCount).reduce((sum,shard)=>sum+shard.count,0);$('resultCount').textContent=`已加载 ${loaded.toLocaleString()} / ${manifest.recordCount.toLocaleString()} 条 · 显示 ${shownCount.toLocaleString()} 条`;$('pageNote').textContent='默认顺序渐进载入；搜索或筛选时读取完整匹配数据'}
-      else{$('resultCount').textContent=`显示 ${shownCount.toLocaleString()} / ${filtered.length.toLocaleString()} 组图文记录`;$('pageNote').textContent=filtered.length>PAGE_SIZE?'可继续向下浏览':''}
+      else{$('resultCount').textContent=`显示 ${shownCount.toLocaleString()} / ${filtered.length.toLocaleString()} 条目`;$('pageNote').textContent=filtered.length>PAGE_SIZE?'可继续向下浏览':''}
       $('more').hidden=progressive?visible>=manifest.recordCount:visible>=filtered.length;
     }
     async function loadMore(){
@@ -151,8 +160,8 @@
         if(run!==filterRun)return;visible=target;render();
       }catch(error){if(run===filterRun){toast('数据载入失败，请稍后重试');console.error(error)}}finally{button.disabled=false;button.textContent='继续浏览'}
     }
-    function showDetail(item){activeItem=item;loadPreviewImage($('detailImage'),item,$('detailImageStatus'));$('detailImage').alt=displayTitle(item)||'图片';$('detailTitle').textContent=displayTitle(item)||item.category||'原提示词';paintCategory($('detailCategory'),item.category);const holder=$('detailPrompts');holder.innerHTML='';const fields=[...(item.prompts||[]),...(item.negativePrompts||[])];for(const field of fields){const block=document.createElement('div');block.className='prompt-block';const label=document.createElement('div');label.className='prompt-label';const name=document.createElement('span');name.textContent=field.label||'原提示词';const copy=document.createElement('button');copy.className='copy';copy.type='button';copy.textContent='复制原文';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(field.text);toast('已复制提示词')}catch(e){toast('复制失败，请手动选择文本')}});label.append(name,copy);const text=document.createElement('p');text.className='prompt-text';text.textContent=field.text;block.append(label,text);holder.append(block)}$('modal').showModal()}
-    function showImage(item){$('viewerTitle').textContent=displayTitle(item)||item.category||'图片查看';$('viewerImage').alt=displayTitle(item)||'图片';loadBestImage($('viewerImage'),item,$('viewerStatus'),$('originalLink'));$('imageModal').showModal()}
+    function showDetail(item){activeItem=item;const hasImage=Boolean(item.image);$('modal').classList.toggle('no-image',!hasImage);$('detailImagePane').hidden=!hasImage;$('detailImageNotice').hidden=hasImage;if(hasImage){loadPreviewImage($('detailImage'),item,$('detailImageStatus'));$('detailImage').alt=displayTitle(item)||'图片'}else{$('detailImage').removeAttribute('src');$('detailImageStatus').textContent=''}$('detailTitle').textContent=displayTitle(item)||item.category||'原提示词';paintCategory($('detailCategory'),item.category);const holder=$('detailPrompts');holder.innerHTML='';const fields=[...(item.prompts||[]),...(item.negativePrompts||[])];for(const field of fields){const block=document.createElement('div');block.className='prompt-block';const label=document.createElement('div');label.className='prompt-label';const name=document.createElement('span');name.textContent=field.label||'原提示词';const copy=document.createElement('button');copy.className='copy';copy.type='button';copy.textContent='复制原文';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(field.text);toast('已复制提示词')}catch(e){toast('复制失败，请手动选择文本')}});label.append(name,copy);const text=document.createElement('p');text.className='prompt-text';text.textContent=field.text;block.append(label,text);holder.append(block)}$('modal').showModal()}
+    function showImage(item){if(!item||!item.image)return;$('viewerTitle').textContent=displayTitle(item)||item.category||'图片查看';$('viewerImage').alt=displayTitle(item)||'图片';loadBestImage($('viewerImage'),item,$('viewerStatus'),$('originalLink'));$('imageModal').showModal()}
     function toast(message){const node=$('toast');node.textContent=message;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),1700)}
     $('search').addEventListener('input',()=>{filterRun++;$('more').hidden=true;clearTimeout(searchTimer);searchTimer=setTimeout(()=>applyFilters(),260)});$('category').addEventListener('change',()=>applyFilters());$('sort').addEventListener('change',()=>applyFilters());
     $('clear').addEventListener('click',()=>{$('search').value='';$('category').value='';$('sort').value='default';clearTimeout(searchTimer);applyFilters()});$('more').addEventListener('click',loadMore);
