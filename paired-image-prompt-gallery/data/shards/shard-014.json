@@ -2541,7 +2541,7 @@
       "时尚与服饰设计"
     ],
     "subcategory": "haute couture、rococo",
-    "image": "images/4e2901119961c9a11a00db4b.jpg",
+    "image": "images/edit-d0b1882b88647921305f6402649bb2609001700e5598ec65082f81b56d15c88e.webp",
     "prompts": [
       {
         "label": "完整提示词",
@@ -2549,9 +2549,8 @@
       }
     ],
     "negativePrompts": [],
-    "imageWidth": 115,
-    "imageHeight": 220,
-    "originalImage": "https://pbs.twimg.com/media/HVUzeXKboAAkLjf?format=webp&name=large"
+    "imageWidth": 941,
+    "imageHeight": 1672
   },
   {
     "category": "时尚与服饰设计",
