@@ -41,6 +41,7 @@
     dialog.no-image .detail{grid-template-columns:minmax(0,1fr)}.detail-image-pane[hidden]{display:none}.prompt-only-note{margin:0 0 12px;padding:9px 11px;border:1px solid #ead4c7;border-radius:10px;background:#fff6ef;color:#85442f;font-size:12px;font-weight:700}
 @media(max-width:1100px){.no-image-thumb{height:260px}}@media(max-width:760px){.no-image-thumb{height:210px}}@media(max-width:390px){.no-image-thumb{height:180px}}
   </style>
+  <link rel="stylesheet" href="./editor-ui.css">
 </head>
 <body>
   <main class="wrap">
@@ -169,5 +170,6 @@
     async function start(){renderInitialSkeletons();try{const response=await fetch('./data/manifest.json');if(!response.ok)throw new Error(`清单请求失败（HTTP ${response.status}）`);manifest=await response.json();if(manifest.version!==1||!Array.isArray(manifest.shards))throw new Error('数据清单格式不兼容');const categoryNames=[...manifest.categories].sort((a,b)=>a.localeCompare(b,'zh-CN'));for(const name of categoryNames){const option=document.createElement('option');option.value=name;option.textContent=`${name} · ${Number(manifest.categoryCounts[name]||0).toLocaleString()}`;$('category').append(option)}$('totalStat').textContent=manifest.recordCount.toLocaleString();$('categoryStat').textContent=manifest.categories.length.toLocaleString();browseShardCount=1;await applyFilters(false)}catch(error){$('grid').innerHTML='';$('grid').setAttribute('aria-busy','false');$('loading').hidden=false;$('loading').textContent='图鉴数据暂时无法读取。请通过静态网站服务打开本页。';$('resultCount').textContent='载入失败';console.error(error)}}
     start();
   </script>
+  <script src="./editor-ui.js"></script>
 </body>
 </html>
